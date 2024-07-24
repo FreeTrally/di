@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
-using Ninject;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FractalPainting.App
 {
@@ -14,13 +14,15 @@ namespace FractalPainting.App
         {
             try
             {
-                var container = new StandardKernel();
-
-                // start here
-                // container.Bind<TService>().To<TImplementation>();
-
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
+                
+                var services = new ServiceCollection();
+
+                // start here
+                // services.AddSingleton<TInterface, TImplementation>();
+
+                
                 Application.Run(new MainForm());
             }
             catch (Exception e)

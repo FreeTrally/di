@@ -2,7 +2,7 @@
 using FractalPainting.Infrastructure.Common;
 using FractalPainting.Infrastructure.Injection;
 using FractalPainting.Infrastructure.UiActions;
-using Ninject;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FractalPainting.App.Actions
 {
@@ -27,11 +27,15 @@ namespace FractalPainting.App.Actions
 
         public void Perform()
         {
-            var container = new StandardKernel();
-            container.Bind<IImageHolder>().ToConstant(imageHolder);
-            container.Bind<Palette>().ToConstant(palette);
-
-            container.Get<KochPainter>().Paint();
+            var services = new ServiceCollection();
+            services.AddSingleton(imageHolder);
+            services.AddSingleton(palette);
+            services.AddSingleton<KochPainter>();
+            var sp = services.BuildServiceProvider();
+            
+            var painter = sp.GetService<KochPainter>();
+            
+            painter.Paint();
         }
     }
 }

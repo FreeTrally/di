@@ -1,11 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using FractalPainting.App.Actions;
 using FractalPainting.Infrastructure.Common;
 using FractalPainting.Infrastructure.Injection;
 using FractalPainting.Infrastructure.UiActions;
-using Ninject;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FractalPainting.App
 {
@@ -24,13 +26,15 @@ namespace FractalPainting.App
         {
         }
 
-        public MainForm(IUiAction[] actions)
+        public MainForm(IEnumerable<IUiAction> actions)
         {
+            var actionsArray = actions.ToArray();
+            
             var imageSettings = CreateSettingsManager().Load().ImageSettings;
             ClientSize = new Size(imageSettings.Width, imageSettings.Height);
 
             var mainMenu = new MenuStrip();
-            mainMenu.Items.AddRange(actions.ToMenuItems());
+            mainMenu.Items.AddRange(actionsArray.ToMenuItems());
             Controls.Add(mainMenu);
 
             var pictureBox = new PictureBoxImageHolder();
@@ -38,18 +42,23 @@ namespace FractalPainting.App
             pictureBox.Dock = DockStyle.Fill;
             Controls.Add(pictureBox);
 
-            DependencyInjector.Inject<IImageHolder>(actions, pictureBox);
-            DependencyInjector.Inject<IImageDirectoryProvider>(actions, CreateSettingsManager().Load());
-            DependencyInjector.Inject<IImageSettingsProvider>(actions, CreateSettingsManager().Load());
-            DependencyInjector.Inject(actions, new Palette());
+            DependencyInjector.Inject<IImageHolder>(actionsArray, pictureBox);
+            DependencyInjector.Inject<IImageDirectoryProvider>(actionsArray, CreateSettingsManager().Load());
+            DependencyInjector.Inject<IImageSettingsProvider>(actionsArray, CreateSettingsManager().Load());
+            DependencyInjector.Inject(actionsArray, new Palette());
         }
 
         private static SettingsManager CreateSettingsManager()
         {
-            var container = new StandardKernel();
-            container.Bind<IObjectSerializer>().To<XmlObjectSerializer>();
-            container.Bind<IBlobStorage>().To<FileBlobStorage>();
-            return container.Get<SettingsManager>();
+            var services = new ServiceCollection();
+            services.AddSingleton<IObjectSerializer, XmlObjectSerializer>();
+            services.AddSingleton<IBlobStorage, FileBlobStorage>();
+            services.AddSingleton<SettingsManager>();
+
+            var sp = services.BuildServiceProvider();
+            var settingsManager = sp.GetService<SettingsManager>();
+
+            return settingsManager;
         }
 
         protected override void OnShown(EventArgs e)

@@ -3,7 +3,7 @@ using FractalPainting.App.Fractals;
 using FractalPainting.Infrastructure.Common;
 using FractalPainting.Infrastructure.Injection;
 using FractalPainting.Infrastructure.UiActions;
-using Ninject;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FractalPainting.App.Actions
 {
@@ -25,11 +25,17 @@ namespace FractalPainting.App.Actions
             var dragonSettings = CreateRandomSettings();
             // редактируем настройки:
             SettingsForm.For(dragonSettings).ShowDialog();
+            
             // создаём painter с такими настройками
-            var container = new StandardKernel();
-            container.Bind<IImageHolder>().ToConstant(imageHolder);
-            container.Bind<DragonSettings>().ToConstant(dragonSettings);
-            container.Get<DragonPainter>().Paint();
+            var services = new ServiceCollection();
+            services.AddSingleton(imageHolder);
+            services.AddSingleton(dragonSettings);
+            services.AddSingleton<DragonPainter>();
+            var sp = services.BuildServiceProvider();
+            
+            var painter = sp.GetService<DragonPainter>();
+            
+            painter.Paint();
         }
 
         private static DragonSettings CreateRandomSettings()
